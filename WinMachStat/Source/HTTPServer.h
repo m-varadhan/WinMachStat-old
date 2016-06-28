@@ -1,16 +1,4 @@
-#pragma once
-
-#ifndef UNICODE
-#define UNICODE
-#endif
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
-#endif
-
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
+#include "Config.h"
 
 #include <windows.h>
 #include <http.h>
@@ -41,7 +29,7 @@
 
 
 namespace WinMachStat {
-	typedef int(*HTTPRequestHandler)(HANDLE hReqQ);
+	typedef int(*HTTPRequestHandler)(PHTTP_REQUEST hReqQ);
 	class HTTPServer {
 	private:
 		ULONG           retCode; /* Last HTTP API return code */
@@ -59,16 +47,18 @@ namespace WinMachStat {
 
 		HTTPServer(void) = delete;
 		DWORD	sendHttpResponse(
-				IN HANDLE        hReqQueue,
 				IN PHTTP_REQUEST pRequest,
 				IN USHORT        StatusCode,
 				IN PSTR          pReason,
 				IN PSTR          pEntity
 			);
 
+		void initHTTPServer();
+
 	public:
 		HTTPServer(std::vector<std::wstring> urls, HTTPRequestHandler rH) ;
+		HTTPServer::~HTTPServer();
 
-		int Listen();
+		int Listen(int maxRequest=0);
 	};
 }

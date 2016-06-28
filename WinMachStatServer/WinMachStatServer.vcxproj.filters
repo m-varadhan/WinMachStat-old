@@ -19,4 +19,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="SQLScripts\winmachstat-db-init.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\WinMachStat\Source\DBConnect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

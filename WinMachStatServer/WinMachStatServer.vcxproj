@@ -19,10 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{5F311D17-4E5D-417C-8F6F-1C2F439BF8E3}</ProjectGuid>
-    <RootNamespace>Project1</RootNamespace>
+    <ProjectGuid>{2FAB1380-6CB3-4B38-AF3B-33946C9A6910}</ProjectGuid>
+    <RootNamespace>WinMachStatServer</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
-    <ProjectName>WinMachStatServer</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -70,7 +69,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);C:\Users\varadhan\Documents\Visual Studio 2015\Projects\WinMachStat\WinMachStat\Source;C:\Users\varadhan\Documents\Visual Studio 2015\Projects\log4cpp\include;C:\Program Files\MySQL\Connector.C++ 1.1\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;C:\Users\varadhan\Documents\Visual Studio 2015\Projects\WinMachStat\WinMachStat\Debug;C:\Users\varadhan\Documents\Visual Studio 2015\Projects\log4cpp\msvc10\log4cpp\Debug;C:\Program Files\MySQL\Connector.C++ 1.1\lib\opt;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -78,6 +78,9 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -119,6 +122,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMachStatServer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SQLScripts\winmachstat-db-init.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\WinMachStat\Source\DBConnect.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

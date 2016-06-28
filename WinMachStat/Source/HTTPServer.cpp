@@ -7,9 +7,131 @@
 #define RETNULL_CHECK_THROW(rc,msg) if((rc)==NULL)		{ throw Exception(errno,ExceptionFormatter()<<(msg)); }
 
 namespace WinMachStat {
+	//public functions
+	HTTPServer::HTTPServer(std::vector<std::wstring> _urls, HTTPRequestHandler rH) :
+			reqHandler(rH), HttpApiVersion(HTTPAPI_VERSION_2), urls(_urls)
+	{
+		initHTTPServer();
+	}
+
+	int HTTPServer::Listen(int maxRequest)
+	{
+		ULONG			   result;
+		HTTP_REQUEST_ID    requestId;
+		DWORD              bytesRead;
+		PHTTP_REQUEST      pRequest;
+		PCHAR              pRequestBuffer;
+		ULONG              RequestBufferLength;
+
+		RequestBufferLength = sizeof(HTTP_REQUEST) + 2048;
+		pRequestBuffer = (PCHAR)ALLOC_MEM(RequestBufferLength);
+
+		RETNULL_CHECK_THROW(pRequestBuffer, "Not enough Memory");
+
+		pRequest = (PHTTP_REQUEST)pRequestBuffer;
+
+		for (reqHandled=0; (maxRequest == 0) || reqHandled<maxRequest; ++reqHandled) {
+			HTTP_SET_NULL_ID(&requestId);
+			if ((retCode=HttpReceiveHttpRequest(
+					hReqQueue,
+					requestId,
+					0,
+					pRequest,
+					RequestBufferLength,
+					&bytesRead,
+					NULL
+				)) == NO_ERROR) {
+				int responseCode = reqHandler(pRequest);
+				LOG(INFO) << "Got Response:" << responseCode;
+				switch (responseCode) {
+				case 200:
+					result = sendHttpResponse(
+						pRequest,
+						200,
+						"OK",
+						"Hey! You hit the server \r\n"
+					);
+					break;
+				default:
+					result = sendHttpResponse(
+						pRequest,
+						503,
+						"Not Implemented",
+						NULL
+					);
+					break;
+				}
+			}
+			else {
+				LOG(INFO) << "Error occured while receiving request:" << retCode;
+			}
+		}
+
+		if (pRequestBuffer) {
+			FREE_MEM(pRequestBuffer);
+		}
+
+		return 0;
+	}
+
+	HTTPServer::~HTTPServer() {
+		HttpCloseUrlGroup(urlGroupID);
+		HttpCloseRequestQueue(hReqQueue);
+		HttpCloseServerSession(serverSessionID);
+		HttpTerminate(HTTP_INITIALIZE_SERVER, NULL);
+	}
 	//private functions
+	void HTTPServer::initHTTPServer() {
+		HTTP_URL_CONTEXT urlContext = 0;
+		retCode = HttpInitialize(
+			HttpApiVersion,
+			HTTP_INITIALIZE_SERVER,
+			NULL);
+		RETCODE_CHECK_THROW(retCode, "Failed to Initialize HTTP Service: ");
+
+		retCode = HttpCreateServerSession(
+			HttpApiVersion,
+			&serverSessionID,
+			NULL);
+		RETCODE_CHECK_THROW(retCode, "Failed to Create HTTP Session: ");
+
+		retCode = HttpCreateRequestQueue(
+			HttpApiVersion,
+			NULL,
+			NULL,
+			0,
+			&hReqQueue);
+		RETCODE_CHECK_THROW(retCode, "Failed to Create HTTP Request Service: ");
+
+		retCode = HttpCreateUrlGroup(
+			serverSessionID,
+			&urlGroupID,
+			NULL);
+		RETCODE_CHECK_THROW(retCode, "Failed to Create URL Group: ");
+
+		for (auto url : urls) {
+			retCode = HttpAddUrlToUrlGroup(
+				urlGroupID,
+				url.c_str(),
+				urlContext++,
+				NULL);
+			RETCODE_CHECK_THROW(retCode, "Failed to Add URL Group: ");
+		}
+
+		HTTP_BINDING_INFO bindingInfo;
+		bindingInfo.RequestQueueHandle = hReqQueue;
+		HTTP_PROPERTY_FLAGS propertyFlags;
+		propertyFlags.Present = 1;
+		bindingInfo.Flags = propertyFlags;
+		retCode = HttpSetUrlGroupProperty(
+			urlGroupID,
+			HttpServerBindingProperty,
+			&bindingInfo,
+			sizeof(HTTP_BINDING_INFO));
+	}
+
+
 	DWORD HTTPServer::sendHttpResponse(
-		IN HANDLE        hReqQueue,
 		IN PHTTP_REQUEST pRequest,
 		IN USHORT        StatusCode,
 		IN PSTR          pReason,
@@ -65,134 +187,11 @@ namespace WinMachStat {
 
 		if (result != NO_ERROR)
 		{
-			LoggerStream &slog = WinMachStat::Logger::getLogger("HTTPServer");
-
-			LOG_INFO(slog) << "HttpSendHttpResponse failed with:" << result;
+			LOG(INFO) << "HttpSendHttpResponse failed with:" << result;
 		}
 
 		return result;
 	}
 
 
-	//public functions
-	HTTPServer::HTTPServer(std::vector<std::wstring> _urls, HTTPRequestHandler rH) :
-			reqHandler(rH), HttpApiVersion(HTTPAPI_VERSION_2)
-	{
-		HTTP_URL_CONTEXT urlContext = 0;
-		retCode =	HttpInitialize(
-					HttpApiVersion,
-					HTTP_INITIALIZE_SERVER,
-					NULL);
-		RETCODE_CHECK_THROW(retCode, "Failed to Initialize HTTP Service: ");
-
-		retCode =	HttpCreateServerSession(
-					HttpApiVersion, 
-					&serverSessionID,
-					NULL);
-		RETCODE_CHECK_THROW(retCode, "Failed to Create HTTP Session: ");
-
-
-		retCode = HttpCreateRequestQueue(
-			HttpApiVersion,
-			NULL,
-			NULL,
-			0,
-			&hReqQueue);
-		RETCODE_CHECK_THROW(retCode, "Failed to Create HTTP Request Service: ");
-
-		retCode =	HttpCreateUrlGroup(
-					serverSessionID, 
-					&urlGroupID, 
-					NULL);
-		RETCODE_CHECK_THROW(retCode, "Failed to Create URL Group: ");
-
-
-		urls = _urls;
-		for (auto url: urls) {
-			retCode =	HttpAddUrlToUrlGroup(
-						urlGroupID,
-						url.c_str(),
-						urlContext++,
-						NULL);
-		}
-
-		HTTP_BINDING_INFO bindingInfo;
-		bindingInfo.RequestQueueHandle = hReqQueue;
-		HTTP_PROPERTY_FLAGS propertyFlags;
-		propertyFlags.Present = 1;
-		bindingInfo.Flags = propertyFlags;
-		retCode =	HttpSetUrlGroupProperty(
-					urlGroupID,
-					HttpServerBindingProperty,
-					&bindingInfo,
-					sizeof(HTTP_BINDING_INFO));
-
-
-
-	}
-
-	int HTTPServer::Listen()
-	{
-		ULONG			   result;
-		HTTP_REQUEST_ID    requestId;
-		DWORD              bytesRead;
-		PHTTP_REQUEST      pRequest;
-		PCHAR              pRequestBuffer;
-		ULONG              RequestBufferLength;
-
-		RequestBufferLength = sizeof(HTTP_REQUEST) + 2048;
-		pRequestBuffer = (PCHAR)ALLOC_MEM(RequestBufferLength);
-
-		RETNULL_CHECK_THROW(pRequestBuffer, "Not enough Memory");
-
-		pRequest = (PHTTP_REQUEST)pRequestBuffer;
-
-
-		LoggerStream &slog = WinMachStat::Logger::getLogger("HTTPServer");
-
-		HTTP_SET_NULL_ID(&requestId);
-		for (;;) {
-			for (HTTP_SET_NULL_ID(&requestId);
-				(retCode=HttpReceiveHttpRequest(
-					hReqQueue,
-					requestId,
-					0,
-					pRequest,
-					RequestBufferLength,
-					&bytesRead,
-					NULL
-				)) != NO_ERROR;
-				HTTP_SET_NULL_ID(&requestId)) {
-
-				int responseCode = reqHandler(pRequest);
-				switch (responseCode) {
-				case 200:
-					result = sendHttpResponse(
-						hReqQueue,
-						pRequest,
-						200,
-						"OK",
-						"Hey! You hit the server \r\n"
-					);
-					break;
-				default:
-					result = sendHttpResponse(
-						hReqQueue,
-						pRequest,
-						503,
-						"Not Implemented",
-						NULL
-					);
-					break;
-				}
-			}
-			LOG_INFO(slog) << "Error occured while receiving request:" << retCode;
-		}
-
-		if (pRequestBuffer) {
-			FREE_MEM(pRequestBuffer);
-		}
-
-		return 0;
-	}
 }

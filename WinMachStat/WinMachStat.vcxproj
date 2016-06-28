@@ -119,21 +119,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Logger.cpp" />
     <ClCompile Include="Source\HTTPServer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Config.h" />
+    <ClInclude Include="Source\DBConnect.h" />
+    <ClInclude Include="Source\easylogging++.h" />
     <ClInclude Include="Source\Exception.h" />
-    <ClInclude Include="Source\Logger.h" />
     <ClInclude Include="Source\HTTPServer.h" />
+    <ClInclude Include="Source\Logger.h" />
+    <ClInclude Include="Source\LoggerMain.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\log4cpp\msvc10\log4cpp\log4cpp.vcxproj">
-      <Project>{8c796fdd-5bb9-41d5-8471-ddc897c8c486}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Conf\log4cpp.properties" />
+    <None Include="Conf\logger.conf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
