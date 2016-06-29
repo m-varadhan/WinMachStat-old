@@ -123,7 +123,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Config.h" />
-    <ClInclude Include="Source\DBConnect.h" />
     <ClInclude Include="Source\easylogging++.h" />
     <ClInclude Include="Source\Exception.h" />
     <ClInclude Include="Source\HTTPServer.h" />
